@@ -153,14 +153,6 @@ export const CheckoutRequestSchema = z.object({
 
 export const CheckoutResponseSchema = z.object({
   order: OrderSchema.describe("The completed order with its items"),
-  earnedDiscountCode: z
-    .string()
-    .optional()
-    .describe("Discount code earned by the user, if applicable"),
-  message: z
-    .string()
-    .optional()
-    .describe("Congratulatory message when a discount code is earned"),
 });
 
 export const GenerateDiscountRequestSchema = z.object({
