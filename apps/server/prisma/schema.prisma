@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Cart Models
+model Product {
+  id        String     @id @default(uuid())
+  name      String
+  price     Int
+  image     String
+  cartItem  CartItem[]
+  createdAt DateTime   @default(now())
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String  @id @default(uuid())
+  cartId    String
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  name      String
+  price     Int
+  quantity  Int
+
+  @@unique([cartId, productId])
+}
+
+// Order Models
+model Order {
+  id             String        @id @default(uuid())
+  userId         String
+  items          OrderItem[]
+  subtotal       Int
+  discountCode   String?       @unique // unique — one order per code
+  discountAmount Int           @default(0)
+  total          Int
+  orderNumber    Int           @unique
+  placedAt       DateTime      @default(now())
+  usedDiscount   DiscountCode? @relation(fields: [discountCode], references: [code])
+}
+
+model OrderItem {
+  id        String @id @default(uuid())
+  orderId   String
+  order     Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  name      String
+  price     Int
+  quantity  Int
+}
+
+// single-use, user-tied discount code
+model DiscountCode {
+  code            String    @id
+  discountPercent Int
+  isUsed          Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  usedAt          DateTime?
+  userId          String
+  order           Order?
+}
+
+model OrderCounter {
+  id    Int @id @default(1)
+  count Int @default(0)
+}
