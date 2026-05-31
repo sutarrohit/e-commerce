@@ -1,38 +1,44 @@
 import { prisma } from "@/lib/prisma.js";
 import { ApiError } from "@/lib/app-error.js";
 
-import { BAD_REQUEST, CONFLICT, FORBIDDEN, NOT_FOUND } from "stoker/http-status-codes";
+import {
+  BAD_REQUEST,
+  CONFLICT,
+  FORBIDDEN,
+  NOT_FOUND,
+} from "stoker/http-status-codes";
 import {
   BAD_REQUEST as BAD_REQUEST_PHRASE,
   CONFLICT as CONFLICT_PHRASE,
   FORBIDDEN as FORBIDDEN_PHRASE,
-  NOT_FOUND as NOT_FOUND_PHRASE
+  NOT_FOUND as NOT_FOUND_PHRASE,
 } from "stoker/http-status-phrases";
 
-import { generateDiscountCode } from "@/lib/discount-code.js";
 import { CheckoutResponse } from "@/types/types.js";
 
-const DISCOUNT_CONFIG = {
-  nthOrder: 5,
-  discountPercent: 10
-};
-
-export async function checkout(userId: string, discountCode?: string): Promise<CheckoutResponse> {
+export async function checkout(
+  userId: string,
+  discountCode?: string,
+): Promise<CheckoutResponse> {
   // get cart with items
   const cart = await prisma.cart.findUnique({
     where: { userId },
     include: {
       items: {
-        include: { product: true }
-      }
-    }
+        include: { product: true },
+      },
+    },
   });
 
   if (!cart) throw new ApiError(NOT_FOUND, NOT_FOUND_PHRASE, "Cart not found");
-  if (cart.items.length === 0) throw new ApiError(BAD_REQUEST, BAD_REQUEST_PHRASE, "Cart is empty");
+  if (cart.items.length === 0)
+    throw new ApiError(BAD_REQUEST, BAD_REQUEST_PHRASE, "Cart is empty");
 
   // calculate subtotal
-  const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = cart.items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
 
   // validate discount code if provided
   let discountAmount = 0;
@@ -40,13 +46,23 @@ export async function checkout(userId: string, discountCode?: string): Promise<C
 
   if (discountCode) {
     const discount = await prisma.discountCode.findUnique({
-      where: { code: discountCode }
+      where: { code: discountCode },
     });
 
-    if (!discount) throw new ApiError(NOT_FOUND, NOT_FOUND_PHRASE, "Invalid discount code");
-    if (discount.isUsed) throw new ApiError(CONFLICT, CONFLICT_PHRASE, "Discount code already used");
+    if (!discount)
+      throw new ApiError(NOT_FOUND, NOT_FOUND_PHRASE, "Invalid discount code");
+    if (discount.isUsed)
+      throw new ApiError(
+        CONFLICT,
+        CONFLICT_PHRASE,
+        "Discount code already used",
+      );
     if (discount.userId !== userId)
-      throw new ApiError(FORBIDDEN, FORBIDDEN_PHRASE, "Discount code does not belong to you");
+      throw new ApiError(
+        FORBIDDEN,
+        FORBIDDEN_PHRASE,
+        "Discount code does not belong to you",
+      );
 
     discountAmount = Math.floor((subtotal * discount.discountPercent) / 100);
     validatedCode = discountCode;
@@ -65,14 +81,14 @@ export async function checkout(userId: string, discountCode?: string): Promise<C
     const counter = await tx.orderCounter.upsert({
       where: { id: 1 },
       create: { id: 1, count: 1 },
-      update: { count: { increment: 1 } }
+      update: { count: { increment: 1 } },
     });
 
     // increment per-user order counter → for discount eligibility
     const userCounter = await tx.userOrderCounter.upsert({
       where: { userId },
       create: { userId, count: 1 },
-      update: { count: { increment: 1 } }
+      update: { count: { increment: 1 } },
     });
 
     // create order + orderItems in one shot
@@ -89,11 +105,11 @@ export async function checkout(userId: string, discountCode?: string): Promise<C
             productId: item.productId,
             name: item.name,
             price: item.price,
-            quantity: item.quantity
-          }))
-        }
+            quantity: item.quantity,
+          })),
+        },
       },
-      include: { items: true }
+      include: { items: true },
     });
 
     // mark discount code as used
@@ -102,8 +118,8 @@ export async function checkout(userId: string, discountCode?: string): Promise<C
         where: { code: validatedCode },
         data: {
           isUsed: true,
-          usedAt: new Date()
-        }
+          usedAt: new Date(),
+        },
       });
     }
 
@@ -114,20 +130,22 @@ export async function checkout(userId: string, discountCode?: string): Promise<C
     return { order, userCount: userCounter.count };
   });
 
-  // check if this user's nth order → auto generate coupon
-  let earnedDiscountCode: string | undefined;
+  // // check if this user's nth order → auto generate coupon
+  // let earnedDiscountCode: string | undefined;
+  //
+  // if (result.userCount % DISCOUNT_CONFIG.nthOrder === 0) {
+  //   const earned = await generateDiscountCode(userId);
+  //   earnedDiscountCode = earned.code;
+  // }
+  //
+  // //return order + earned coupon if any
+  // return {
+  //   order: result.order,
+  //   ...(earnedDiscountCode && {
+  //     earnedDiscountCode,
+  //     message: `Congrats! You earned a ${DISCOUNT_CONFIG.discountPercent}% discount code: ${earnedDiscountCode}`
+  //   })
+  // };
 
-  if (result.userCount % DISCOUNT_CONFIG.nthOrder === 0) {
-    const earned = await generateDiscountCode(userId);
-    earnedDiscountCode = earned.code;
-  }
-
-  //return order + earned coupon if any
-  return {
-    order: result.order,
-    ...(earnedDiscountCode && {
-      earnedDiscountCode,
-      message: `Congrats! You earned a ${DISCOUNT_CONFIG.discountPercent}% discount code: ${earnedDiscountCode}`
-    })
-  };
+  return { order: result.order };
 }
