@@ -13,12 +13,7 @@ vi.mock("@/lib/prisma.js", () => ({
   },
 }));
 
-vi.mock("@/lib/discount-code.js", () => ({
-  generateDiscountCode: vi.fn(),
-}));
-
 import { prisma } from "../../src/lib/prisma.js";
-import { generateDiscountCode } from "../../src/lib/discount-code.js";
 
 const mockProduct = {
   id: "550e8400-e29b-41d4-a716-446655440000",
@@ -171,16 +166,9 @@ describe("checkout", () => {
       return await fn(mockTx);
     });
 
-    vi.mocked(generateDiscountCode).mockResolvedValue({
-      code: "NEWCODE1",
-      discountPercent: 10,
-      userId: mockCart.userId,
-    } as any);
-
     const result = await checkout(mockCart.userId);
 
     expect(result.order).toEqual(mockOrder);
-    expect(result.earnedDiscountCode).toBeUndefined();
     expect(mockTx.orderCounter.upsert).toHaveBeenCalledWith({
       where: { id: 1 },
       create: { id: 1, count: 1 },
@@ -248,10 +236,9 @@ describe("checkout", () => {
     });
   });
 
-  it("generates discount code on user's nth order", async () => {
+  it("completes checkout on user's nth order without auto-generating discount", async () => {
     vi.mocked(prisma.cart.findUnique).mockResolvedValue(mockCart);
 
-    const userNthCount = 5;
     const mockTx = {
       $queryRaw: vi.fn(),
       orderCounter: {
@@ -260,7 +247,7 @@ describe("checkout", () => {
       userOrderCounter: {
         upsert: vi
           .fn()
-          .mockResolvedValue({ userId: mockCart.userId, count: userNthCount }),
+          .mockResolvedValue({ userId: mockCart.userId, count: 5 }),
       },
       order: {
         create: vi.fn().mockResolvedValue(mockOrder),
@@ -277,25 +264,15 @@ describe("checkout", () => {
       return await fn(mockTx);
     });
 
-    const newCode = {
-      code: "NTHORDER",
-      discountPercent: 10,
-      userId: mockCart.userId,
-    };
-    vi.mocked(generateDiscountCode).mockResolvedValue(newCode as any);
-
     const result = await checkout(mockCart.userId);
 
-    // discount triggers on user's 5th order regardless of global orderNumber
-    expect(result.earnedDiscountCode).toBe(newCode.code);
-    expect(result.message).toContain("Congrats!");
-    expect(generateDiscountCode).toHaveBeenCalledWith(mockCart.userId);
+    expect(result.order).toEqual(mockOrder);
+    expect((result as any).earnedDiscountCode).toBeUndefined();
   });
 
-  it("does not generate discount code on non-nth user order", async () => {
+  it("completes checkout on non-nth user order without discount code", async () => {
     vi.mocked(prisma.cart.findUnique).mockResolvedValue(mockCart);
 
-    const userNonNthCount = 3;
     const mockTx = {
       $queryRaw: vi.fn(),
       orderCounter: {
@@ -304,7 +281,7 @@ describe("checkout", () => {
       userOrderCounter: {
         upsert: vi.fn().mockResolvedValue({
           userId: mockCart.userId,
-          count: userNonNthCount,
+          count: 3,
         }),
       },
       order: {
@@ -324,11 +301,11 @@ describe("checkout", () => {
 
     const result = await checkout(mockCart.userId);
 
-    expect(result.earnedDiscountCode).toBeUndefined();
-    expect(generateDiscountCode).not.toHaveBeenCalled();
+    expect(result.order).toEqual(mockOrder);
+    expect((result as any).earnedDiscountCode).toBeUndefined();
   });
 
-  it("first order for a new user does not trigger discount", async () => {
+  it("first order for a new user succeeds without discount code", async () => {
     vi.mocked(prisma.cart.findUnique).mockResolvedValue(mockCart);
 
     const mockTx = {
@@ -356,15 +333,9 @@ describe("checkout", () => {
       return await fn(mockTx);
     });
 
-    vi.mocked(generateDiscountCode).mockResolvedValue({
-      code: "NEWCODE1",
-      discountPercent: 10,
-      userId: mockCart.userId,
-    } as any);
-
     const result = await checkout(mockCart.userId);
 
-    expect(result.earnedDiscountCode).toBeUndefined();
-    expect(generateDiscountCode).not.toHaveBeenCalled();
+    expect(result.order).toEqual(mockOrder);
+    expect((result as any).earnedDiscountCode).toBeUndefined();
   });
 });
