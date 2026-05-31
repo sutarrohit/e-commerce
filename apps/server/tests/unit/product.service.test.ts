@@ -1,9 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { listProducts } from "../../src/services/product.service.js";
+import {
+  listProducts,
+  getProductById,
+} from "../../src/services/product.service.js";
+import { ApiError } from "../../src/lib/app-error.js";
 
 vi.mock("@/lib/prisma.js", () => ({
   prisma: {
-    product: { findMany: vi.fn(), count: vi.fn() },
+    product: { findMany: vi.fn(), count: vi.fn(), findUnique: vi.fn() },
   },
 }));
 
@@ -127,5 +131,28 @@ describe("listProducts", () => {
     const result = await listProducts(1, 3);
 
     expect(result.totalPages).toBe(2);
+  });
+});
+
+describe("getProductById", () => {
+  it("returns product when found", async () => {
+    const product = mockProducts[0];
+    vi.mocked(prisma.product.findUnique).mockResolvedValue(product);
+
+    const result = await getProductById(product.id);
+
+    expect(result).toEqual(product);
+    expect(prisma.product.findUnique).toHaveBeenCalledWith({
+      where: { id: product.id },
+    });
+  });
+
+  it("throws 404 when product does not exist", async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue(null);
+
+    const result = getProductById("nonexistent-id");
+
+    await expect(result).rejects.toThrow(ApiError);
+    await expect(result).rejects.toThrow("Product not found");
   });
 });

@@ -215,6 +215,10 @@ export const ProductListResponseSchema = z.object({
   totalPages: z.number().int().nonnegative().describe("Total number of pages"),
 });
 
+export const ProductParamsSchema = z.object({
+  id: z.string().uuid().describe("Product ID"),
+});
+
 export type AddToCart = z.infer<typeof AddToCartSchema>;
 export type CheckoutRequest = z.infer<typeof CheckoutRequestSchema>;
 export type CheckoutResponse = z.infer<typeof CheckoutResponseSchema>;
@@ -227,3 +231,4 @@ export type GenerateDiscountResponse = z.infer<
 export type AdminSummaryResponse = z.infer<typeof AdminSummaryResponseSchema>;
 export type ProductListRequest = z.infer<typeof ProductListRequestSchema>;
 export type ProductListResponse = z.infer<typeof ProductListResponseSchema>;
+export type ProductParams = z.infer<typeof ProductParamsSchema>;
