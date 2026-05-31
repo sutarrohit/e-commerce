@@ -196,6 +196,25 @@ export const AdminSummaryResponseSchema = z.object({
     .describe("Total number of orders placed"),
 });
 
+export const ProductListRequestSchema = z.object({
+  page: z.coerce.number().int().positive().default(1).describe("Page number"),
+  limit: z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(100)
+    .default(10)
+    .describe("Items per page"),
+});
+
+export const ProductListResponseSchema = z.object({
+  products: z.array(ProductSchema).describe("List of products"),
+  total: z.number().int().nonnegative().describe("Total number of products"),
+  page: z.number().int().positive().describe("Current page number"),
+  limit: z.number().int().positive().describe("Items per page"),
+  totalPages: z.number().int().nonnegative().describe("Total number of pages"),
+});
+
 export type AddToCart = z.infer<typeof AddToCartSchema>;
 export type CheckoutRequest = z.infer<typeof CheckoutRequestSchema>;
 export type CheckoutResponse = z.infer<typeof CheckoutResponseSchema>;
@@ -206,3 +225,5 @@ export type GenerateDiscountResponse = z.infer<
   typeof GenerateDiscountResponseSchema
 >;
 export type AdminSummaryResponse = z.infer<typeof AdminSummaryResponseSchema>;
+export type ProductListRequest = z.infer<typeof ProductListRequestSchema>;
+export type ProductListResponse = z.infer<typeof ProductListResponseSchema>;
