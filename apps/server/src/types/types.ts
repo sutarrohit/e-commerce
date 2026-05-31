@@ -65,6 +65,12 @@ export const OrderCounterSchema = z.object({
   count: z.number().int().nonnegative().describe("Current order sequence counter")
 });
 
+export const AddToCartSchema = z.object({
+  userId: z.uuid().describe("Unique identifier of the user"),
+  productId: z.string().uuid().describe("Unique identifier of the product"),
+  quantity: z.number().int().positive().describe("Quantity of the product to add to the cart")
+});
+
 // Typescript Types
 export type Product = z.infer<typeof ProductSchema>;
 export type CartItem = z.infer<typeof CartItemSchema>;
@@ -73,3 +79,5 @@ export type OrderItem = z.infer<typeof OrderItemSchema>;
 export type DiscountCode = z.infer<typeof DiscountCodeSchema>;
 export type Order = z.infer<typeof OrderSchema>;
 export type OrderCounter = z.infer<typeof OrderCounterSchema>;
+
+export type AddToCart = z.infer<typeof AddToCartSchema>;
