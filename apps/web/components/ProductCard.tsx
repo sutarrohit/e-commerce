@@ -21,7 +21,7 @@ const ProductCard = ({ product }: { product: Product }) => {
       queryClient.invalidateQueries({ queryKey: ["cart", userId] });
       setJustAdded(true);
       setTimeout(() => setJustAdded(false), 2000);
-    },
+    }
   });
 
   const handleAddToCart = () => {
@@ -29,58 +29,52 @@ const ProductCard = ({ product }: { product: Product }) => {
   };
 
   return (
-    <Card className="gap-0 py-0 overflow-hidden group duration-300">
-      <div className="relative overflow-hidden">
-        <div className="w-full h-65">
+    <Card className='gap-0 py-0 overflow-hidden group duration-300'>
+      <div className='relative overflow-hidden'>
+        <div className='w-full h-65'>
           <Image
             src={product.image}
             alt={product.name}
             width={200}
             height={200}
-            className="w-full h-full object-cover group-hover:brightness-50 group-hover:scale-125 transition duration-300 delay-75"
+            className='w-full h-full object-cover group-hover:brightness-50 group-hover:scale-125 transition duration-300 delay-75'
           />
         </div>
 
-        <div className="absolute top-2 right-2 hidden p-4 rounded-full group-hover:block">
-          <ArrowRight className="text-foreground" />
+        <div className='absolute top-2 right-2 hidden p-4 rounded-full group-hover:block'>
+          <ArrowRight className='text-foreground' />
         </div>
       </div>
 
-      <CardContent className="p-4">
-        <div className="flex justify-between gap-5">
+      <CardContent className='p-4'>
+        <div className='flex justify-between gap-5'>
           <div>
             <a href={`/products/${product.id}`}>
-              <h4 className="text-md font-medium duration-300 ">
-                {product.name}
-              </h4>
+              <h4 className='text-md font-medium duration-300 '>{product.name}</h4>
             </a>
           </div>
 
-          <Badge variant="secondary" className="text-12">
+          <Badge variant='secondary' className='text-12'>
             ${(product.price / 100).toLocaleString()}
           </Badge>
         </div>
       </CardContent>
 
-      <CardFooter className="px-4 pb-4 pt-4 flex-1">
-        <Button
-          onClick={handleAddToCart}
-          disabled={mutation.isPending}
-          className="w-full cursor-pointer"
-        >
+      <CardFooter className='px-4 pb-4 pt-4 flex-1'>
+        <Button onClick={handleAddToCart} disabled={mutation.isPending} className='w-full cursor-pointer'>
           {mutation.isPending ? (
             <>
-              <ShoppingCart className="size-4 animate-bounce" />
+              <ShoppingCart className='size-4 animate-bounce' />
               Adding...
             </>
           ) : justAdded ? (
             <>
-              <Check className="size-4" />
+              <Check className='size-4' />
               Added
             </>
           ) : (
             <>
-              <ShoppingCart className="size-4" />
+              <ShoppingCart className='size-4' />
               Add to Cart
             </>
           )}
