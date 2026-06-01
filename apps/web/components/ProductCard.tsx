@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -12,20 +12,20 @@ import { useUserId } from "@/lib/hooks/use-user-id";
 import Image from "next/image";
 
 const ProductCard = ({ product }: { product: Product }) => {
-  const { userId, isReady } = useUserId();
+  const { userId } = useUserId();
+  const queryClient = useQueryClient();
   const [justAdded, setJustAdded] = useState(false);
-  const mutation = useMutation(addToCartMutationOptions());
+  const mutation = useMutation({
+    ...addToCartMutationOptions(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cart", userId] });
+      setJustAdded(true);
+      setTimeout(() => setJustAdded(false), 2000);
+    },
+  });
 
   const handleAddToCart = () => {
-    mutation.mutate(
-      { userId, productId: product.id, quantity: 1 },
-      {
-        onSuccess: () => {
-          setJustAdded(true);
-          setTimeout(() => setJustAdded(false), 2000);
-        },
-      },
-    );
+    mutation.mutate({ userId, productId: product.id, quantity: 1 });
   };
 
   return (
@@ -65,7 +65,7 @@ const ProductCard = ({ product }: { product: Product }) => {
       <CardFooter className="px-4 pb-4 pt-4 flex-1">
         <Button
           onClick={handleAddToCart}
-          disabled={!isReady || mutation.isPending}
+          disabled={mutation.isPending}
           className="w-full cursor-pointer"
         >
           {mutation.isPending ? (
