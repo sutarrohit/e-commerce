@@ -2,6 +2,17 @@
 
 A full-stack e-commerce platform built with Turborepo, TypeScript, and modern web technologies.
 
+## Deployed URLs
+
+| Service      | URL                                                                                                                                                            |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend     | [https://e-commerce-web-p7x8.vercel.app](https://e-commerce-web-p7x8.vercel.app)                                                                               |
+| Backend API  | [https://6auqiet4ilbxqizd3p3nrgyeaa0jnuiz.lambda-url.ap-south-1.on.aws](https://6auqiet4ilbxqizd3p3nrgyeaa0jnuiz.lambda-url.ap-south-1.on.aws)                 |
+| Swagger UI   | [https://6auqiet4ilbxqizd3p3nrgyeaa0jnuiz.lambda-url.ap-south-1.on.aws/swagger](https://6auqiet4ilbxqizd3p3nrgyeaa0jnuiz.lambda-url.ap-south-1.on.aws/swagger) |
+| OpenAPI Spec | [https://6auqiet4ilbxqizd3p3nrgyeaa0jnuiz.lambda-url.ap-south-1.on.aws/doc](https://6auqiet4ilbxqizd3p3nrgyeaa0jnuiz.lambda-url.ap-south-1.on.aws/doc)         |
+
+> Note: The backend has rate limiting (100 req / 15 min per IP). If you get a 429 response, wait before retrying.
+
 ## Architecture
 
 ![Architecture Diagram](images/architecture-server.png)
@@ -95,7 +106,10 @@ The server starts on **http://localhost:4000**.
 
 ### API Endpoints
 
-All endpoints are prefixed with `/api/v1`. Interactive docs available at **http://localhost:4000/swagger**.
+All endpoints are prefixed with `/api/v1`. Interactive docs available at:
+
+- **Local:** http://localhost:4000/swagger
+- **Deployed:** https://6auqiet4ilbxqizd3p3nrgyeaa0jnuiz.lambda-url.ap-south-1.on.aws/swagger
 
 #### Users
 
@@ -139,9 +153,33 @@ All endpoints are prefixed with `/api/v1`. Interactive docs available at **http:
 | POST   | `/api/v1/admin/generate-discount` | Generate discount for user's Nth order  |
 | GET    | `/api/v1/admin/summary`           | Admin dashboard summary (revenue, etc.) |
 
+### Postman Collection
+
+Import the collection into Postman from [`postman/e-commerce.postman_collection.json`](./postman/e-commerce.postman_collection.json).
+
+**Environments:** Create two Postman environments to switch between local and deployed:
+
+| Variable  | Local Value             | Deployed Value                                                          |
+| --------- | ----------------------- | ----------------------------------------------------------------------- |
+| `baseUrl` | `http://localhost:4000` | `https://6auqiet4ilbxqizd3p3nrgyeaa0jnuiz.lambda-url.ap-south-1.on.aws` |
+
+**Typical flow:**
+
+1. **Create User** → `POST /api/v1/users` — auto-saves `userId`
+2. **List Products** → `GET /api/v1/products` — auto-saves first `productId`
+3. **Add to Cart** → `POST /api/v1/add/items` — uses `userId` + `productId`
+4. **Checkout** → `POST /api/v1/checkout` — converts cart to order
+5. **(Admin) Generate Discount** → `POST /api/v1/admin/generate-discount` — after 5 orders
+6. **Validate Discount** → `POST /api/v1/discount/validate` — uses `discountCode`
+
+The collection includes test scripts that automatically save `userId` and `productId` into collection variables, so subsequent requests can use `{{userId}}` and `{{productId}}` placeholders.
+
 ### Quick Start (Swagger UI)
 
-Open **http://localhost:4000/swagger** in your browser for interactive API documentation.
+Open the Swagger UI in your browser for interactive API documentation:
+
+- **Local:** http://localhost:4000/swagger
+- **Deployed:** https://6auqiet4ilbxqizd3p3nrgyeaa0jnuiz.lambda-url.ap-south-1.on.aws/swagger
 
 Typical flow in Swagger:
 
@@ -223,6 +261,18 @@ Existing test suites:
 ## Frontend (`apps/web`)
 
 Built with **Next.js 16** and **React 19**.
+
+Deployed at: [https://e-commerce-web-p7x8.vercel.app](https://e-commerce-web-p7x8.vercel.app)
+
+### Tech Stack
+
+| Layer      | Technology                   |
+| ---------- | ---------------------------- |
+| Framework  | Next.js 16                   |
+| UI Library | React 19                     |
+| Styling    | Tailwind CSS + shadcn/ui     |
+| State      | TanStack Query (React Query) |
+| Routing    | App Router                   |
 
 ## Packages
 

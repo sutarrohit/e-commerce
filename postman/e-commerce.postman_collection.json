@@ -1,0 +1,353 @@
+{
+  "info": {
+    "name": "E-Commerce API",
+    "description": "API for the E-Commerce platform built with Hono + Prisma + PostgreSQL.\n\n## Base URLs\n\n- **Local:** http://localhost:4000\n- **Deployed:** https://6auqiet4ilbxqizd3p3nrgyeaa0jnuiz.lambda-url.ap-south-1.on.aws\n\n## Variables\n\nSet `baseUrl` to your desired environment before sending requests.\n\n## Flow\n\n1. Create a user → copy `id`\n2. List products → copy a product `id`\n3. Add item to cart → use `userId` + `productId`\n4. Checkout → use `userId`\n5. (Admin) Generate discount → use `userId` (requires 5 orders)\n6. Validate discount → use `discountCode` from step 5",
+    "schema": "https://raw.githubusercontent.com/postmanlabs/postman-collection/master/json-collection-schema/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "discountCode",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('userId', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users"]
+            },
+            "description": "Create a new user. Server generates a UUID and creates an empty cart.\n\n**Response 201:** `{ \"id\": \"uuid\" }`"
+          },
+          "response": [
+            {
+              "name": "Created",
+              "status": "Created",
+              "code": 201,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.products && json.products.length > 0) {",
+                  "        pm.collectionVariables.set('productId', json.products[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (default: 10, max: 100)"
+                }
+              ]
+            },
+            "description": "List products with pagination.\n\n**Response 200:** Paginated list of products."
+          },
+          "response": [
+            {
+              "name": "OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"products\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"name\": \"Sample Product\",\n      \"price\": 1999,\n      \"image\": \"https://example.com/product.jpg\",\n      \"createdAt\": \"2026-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"limit\": 10,\n  \"totalPages\": 1\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "{{productId}}"]
+            },
+            "description": "Get a single product by its ID.\n\n**Response 200:** Product object\n**Response 404:** Product not found"
+          },
+          "response": [
+            {
+              "name": "OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"name\": \"Sample Product\",\n  \"price\": 1999,\n  \"image\": \"https://example.com/product.jpg\",\n  \"createdAt\": \"2026-01-01T00:00:00.000Z\"\n}"
+            },
+            {
+              "name": "Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"description\": \"Product not found\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cart",
+      "item": [
+        {
+          "name": "Add Item to Cart",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/add/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "add", "items"]
+            },
+            "description": "Add a product to the user's cart. If the product already exists in the cart, the quantity is incremented.\n\n**Response 201:** Updated cart with items"
+          },
+          "response": [
+            {
+              "name": "Created",
+              "status": "Created",
+              "code": 201,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"id\": \"660e8400-e29b-41d4-a716-446655440000\",\n  \"userId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"items\": [\n    {\n      \"id\": \"770e8400-e29b-41d4-a716-446655440000\",\n      \"cartId\": \"660e8400-e29b-41d4-a716-446655440000\",\n      \"productId\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"name\": \"Sample Product\",\n      \"price\": 1999,\n      \"quantity\": 2\n    }\n  ],\n  \"createdAt\": \"2026-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2026-01-01T00:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Cart",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cart/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cart", "{{userId}}"]
+            },
+            "description": "Get the current cart for a user with all items.\n\n**Response 200:** Cart with items\n**Response 404:** Cart not found"
+          },
+          "response": [
+            {
+              "name": "OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"id\": \"660e8400-e29b-41d4-a716-446655440000\",\n  \"userId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"items\": [\n    {\n      \"id\": \"770e8400-e29b-41d4-a716-446655440000\",\n      \"cartId\": \"660e8400-e29b-41d4-a716-446655440000\",\n      \"productId\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"name\": \"Sample Product\",\n      \"price\": 1999,\n      \"quantity\": 2\n    }\n  ],\n  \"createdAt\": \"2026-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2026-01-01T00:00:00.000Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Checkout",
+      "item": [
+        {
+          "name": "Checkout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"discountCode\": \"{{discountCode}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/checkout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "checkout"]
+            },
+            "description": "Convert the user's cart into an order. Optionally apply a discount code.\n\n**Response 201:** Completed order with items\n**Response 400:** Empty cart\n**Response 404:** Cart not found\n**Response 403:** Discount code not owned by user\n**Response 409:** Discount code already used"
+          },
+          "response": [
+            {
+              "name": "Created",
+              "status": "Created",
+              "code": 201,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"order\": {\n    \"id\": \"880e8400-e29b-41d4-a716-446655440000\",\n    \"userId\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"items\": [\n      {\n        \"id\": \"990e8400-e29b-41d4-a716-446655440000\",\n        \"orderId\": \"880e8400-e29b-41d4-a716-446655440000\",\n        \"productId\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"name\": \"Sample Product\",\n        \"price\": 1999,\n        \"quantity\": 2\n      }\n    ],\n    \"subtotal\": 3998,\n    \"discountCode\": null,\n    \"discountAmount\": 0,\n    \"total\": 3998,\n    \"orderNumber\": 1,\n    \"placedAt\": \"2026-01-01T00:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Discount",
+      "item": [
+        {
+          "name": "Validate Discount",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"discountCode\": \"{{discountCode}}\",\n  \"subtotal\": 3998\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/discount/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "discount", "validate"]
+            },
+            "description": "Validate a discount code for a user and calculate the discount amount.\n\n**Response 200:** Validation result with calculated discount"
+          },
+          "response": [
+            {
+              "name": "Valid",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"valid\": true,\n  \"discountPercent\": 10,\n  \"discountAmount\": 399,\n  \"total\": 3599\n}"
+            },
+            {
+              "name": "Invalid",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"valid\": false,\n  \"discountPercent\": 0,\n  \"discountAmount\": 0,\n  \"total\": 3998\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Generate Discount",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/generate-discount",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "generate-discount"]
+            },
+            "description": "Generate a discount code for a user. The user must have placed at least 5 orders (every 5th order qualifies).\n\n**Response 201:** Generated discount code\n**Response 400:** Condition not met"
+          },
+          "response": [
+            {
+              "name": "Created",
+              "status": "Created",
+              "code": 201,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"code\": \"ABCD1234\",\n  \"discountPercent\": 10,\n  \"userId\": \"550e8400-e29b-41d4-a716-446655440000\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Admin Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "summary"]
+            },
+            "description": "Get an admin dashboard summary with total revenue, items purchased, discount codes generated, discounts given, and total orders."
+          },
+          "response": [
+            {
+              "name": "OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"totalItemsPurchased\": 42,\n  \"totalRevenue\": 83916,\n  \"totalDiscountCodes\": 5,\n  \"totalDiscountsGiven\": 1500,\n  \"totalOrders\": 25\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
