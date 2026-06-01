@@ -227,6 +227,36 @@ export const ProductParamsSchema = z.object({
   id: z.string().uuid().describe("Product ID"),
 });
 
+export const ValidateDiscountRequestSchema = z.object({
+  userId: z.string().uuid().describe("Unique identifier of the user"),
+  discountCode: z.string().describe("Discount code to validate"),
+  subtotal: z
+    .number()
+    .int()
+    .nonnegative()
+    .describe("Current subtotal in cents"),
+});
+
+export const ValidateDiscountResponseSchema = z.object({
+  valid: z.boolean().describe("Whether the discount code is valid"),
+  discountPercent: z
+    .number()
+    .int()
+    .min(0)
+    .max(100)
+    .describe("Discount percentage"),
+  discountAmount: z
+    .number()
+    .int()
+    .nonnegative()
+    .describe("Calculated discount amount in cents"),
+  total: z
+    .number()
+    .int()
+    .nonnegative()
+    .describe("Total after discount in cents"),
+});
+
 export type AddToCart = z.infer<typeof AddToCartSchema>;
 export type CheckoutRequest = z.infer<typeof CheckoutRequestSchema>;
 export type CheckoutResponse = z.infer<typeof CheckoutResponseSchema>;
@@ -242,3 +272,9 @@ export type ProductListResponse = z.infer<typeof ProductListResponseSchema>;
 export type ProductParams = z.infer<typeof ProductParamsSchema>;
 export type CartParams = z.infer<typeof CartParamsSchema>;
 export type CreateUserResponse = z.infer<typeof CreateUserResponseSchema>;
+export type ValidateDiscountRequest = z.infer<
+  typeof ValidateDiscountRequestSchema
+>;
+export type ValidateDiscountResponse = z.infer<
+  typeof ValidateDiscountResponseSchema
+>;
