@@ -315,7 +315,18 @@ export default function CheckoutPage() {
                 )}
                 {generateDiscountMutation.error && (
                   <p className="text-sm text-muted-foreground">
-                    Place 5 orders to unlock a discount code.
+                    {(() => {
+                      const match = (
+                        generateDiscountMutation.error as Error
+                      ).message.match(/\((\d+)\)/);
+                      if (!match)
+                        return "Place 5 orders to unlock a discount code.";
+                      const count = parseInt(match[1], 10);
+                      const remaining = 5 - (count % 5);
+                      return remaining === 1
+                        ? "1 more order to get a coupon"
+                        : `${remaining} more orders to get a coupon`;
+                    })()}
                   </p>
                 )}
               </div>

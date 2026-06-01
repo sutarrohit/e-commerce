@@ -1,4 +1,4 @@
-import { ShoppingBag, ShoppingCart } from "lucide-react";
+import { ShoppingBag, ShoppingCart, Shield } from "lucide-react";
 import Link from "next/link";
 
 const Header = () => (
@@ -11,13 +11,20 @@ const Header = () => (
         </Link>
       </div>
 
-      <div>
+      <div className='flex items-center gap-4 font-semibold'>
         <Link
           href='/checkout'
-          className='flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors'
+          className='flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors'
         >
           <ShoppingCart className='size-4' />
           Cart
+        </Link>
+        <Link
+          href='/admin'
+          className='flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors'
+        >
+          <Shield className='size-4' />
+          Admin
         </Link>
       </div>
     </div>
