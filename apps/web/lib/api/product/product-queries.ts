@@ -7,6 +7,7 @@ export function productListOptions(filters?: ProductFilters) {
     queryKey: ["products", "list", filters],
     queryFn: () => productApis.listProducts(filters),
     staleTime: 1000 * 60 * 5,
+    retry: 2
   });
 }
 
@@ -14,6 +15,6 @@ export function productDetailOptions(id: string) {
   return queryOptions({
     queryKey: ["products", "detail", id],
     queryFn: () => productApis.getProductById(id),
-    staleTime: Infinity,
+    staleTime: Infinity
   });
 }
